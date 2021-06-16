@@ -1,0 +1,13 @@
+#+TITLE: Readme
+* Anker
+
+** Prerequisites
+- [[https://apps.ankiweb.net/][Anki]] running
+- [[https://ankiweb.net/shared/info/2055492159][AnkiConnect]] extension installed
+
+** Autocompletion
+Source this in =.zshrc= or run it once and store it to speed up the evaluation.
+Replace =zsh= for =bash=.
+#+begin_src sh
+eval "$(_ANKER_COMPLETE=zsh_source anker)"
+#+end_src
