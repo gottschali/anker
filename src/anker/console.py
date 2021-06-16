@@ -1,7 +1,7 @@
 import click
 
-from vocabulary import Vocabulary
-import connect
+from .vocabulary import Vocabulary
+import anker.connect as connect
 
 # TODO API for
 # - phonetic

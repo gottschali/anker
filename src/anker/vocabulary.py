@@ -5,8 +5,8 @@ from nltk.stem import PorterStemmer
 from nltk.corpus import wordnet
 from googletrans import Translator
 
-from webster import Webster
-from image_downloader import ImageDownloader
+from .webster import Webster
+from .image_downloader import ImageDownloader
 
 class Vocabulary:
     translator = Translator()
