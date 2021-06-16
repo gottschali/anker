@@ -1,19 +1,27 @@
 import click
 
 from vocabulary import Vocabulary
-from connect import buildNote
+import connect
 
 # TODO API for
 # - phonetic
 # - examples ?
 # - trivia
+#
+def autocomplete_deck(ctx, param, incomplete):
+    return [d for d in connect.decks if d.starswith(incomplete)]
+
+def autocomplete_model(ctx, param, incomplete):
+    return [d for d in connect.models if d.starswith(incomplete)]
 
 @click.command()
 @click.argument("input", type=click.File('r'))
 @click.argument("source", type=click.Path(exists=True))
+@click.argument("deck", type=click.STRING, autocompletion=autocomplete_deck, default="Anker")
+@click.argument("model", type=click.STRING, autocompletion=autocomplete_model, default="Basic")
 @click.option("-l", "--language", default="en")
 @click.option("-t", "--target", default="de")
-def main(input, source, language, target):
+def main(input, source, deck, model, language, target):
     for word in input:
         v = Vocabulary(word, source, language, target)
         print(v)
@@ -29,7 +37,8 @@ def main(input, source, language, target):
         print("PRONUNCIATION", v.pronunciation)
         print("DEFINITIONS", v.definitions)
         print("=== Building Note === ")
-        print(buildNote(v))
+
+        print(connect.buildNote(deck, model, v))
         print("=== Built Note === ")
 
 

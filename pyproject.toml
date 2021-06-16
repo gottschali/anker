@@ -1,8 +1,11 @@
 [tool.poetry]
-name = "toank"
+name = "anker"
 version = "0.1.0"
 description = "Taking in a list of words from a book and create anki flashcards out of it"
 authors = ["Gottschali <aligottschall22@gmail.com>"]
+
+[tool.poetry.scripts]
+anker = "anker.console:main"
 
 [tool.poetry.dependencies]
 python = "^3.9"
@@ -12,6 +15,7 @@ googletrans = "==3.1.0a"
 requests = "^2.25.1"
 beautifulsoup4 = "^4.9.3"
 tqdm = "^4.61.1"
+tabulate = "^0.8.9"
 
 [tool.poetry.dev-dependencies]
 

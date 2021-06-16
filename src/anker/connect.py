@@ -6,9 +6,11 @@ import requests
 def request(action, **params):
     return {'action': action, 'params': params, 'version': 6}
 
+class AnkiConnectionError(Exception):
+    pass
+
 def invoke(action, **params):
     payload = json.dumps(request(action, **params)).encode('utf-8')
-    print(payload)
     url = 'http://localhost:8765'
     try:
         response = requests.get(url, data=payload)
@@ -23,13 +25,16 @@ def invoke(action, **params):
             raise Exception(result['error'])
         return result['result']
     except requests.exceptions.ConnectionError:
-        raise Exception("Connnection Error: Is the Anki running and the AnkiConnect addon installed and configured to run on ", url)
+        raise AnkiConnectionError("Is the Anki running and the AnkiConnect addon installed and configured to run on ", url)
 
-def buildNote(vocab):
+decks = invoke('deckNames')
+models = invoke('modelNames')
+
+def buildNote(deckName, modelName, vocab):
     params = {
         "note": {
-            "deckName": "Test",
-            "modelName": "English",
+            "deckName": deckName,
+            "modelName": modelName,
             "fields": {
                 "English": vocab.word,
                 "German": vocab.translate_word() or "",
