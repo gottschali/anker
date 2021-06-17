@@ -14,13 +14,13 @@ class Vocabulary:
     webster = Webster()
     image_downloader = ImageDownloader()
 
-    def __init__(self, word, source, language, target):
+    def __init__(self, word, context_source, language, target):
         self.word = word.strip()
         self.normalized = self.word.lower()
-        self.source = source
+        self.source = context_source
         self.language = language
         self.target = target
-        self.context = self.get_context(source)
+        self.context = self.get_context(context_source)
         self.syno_and_antonyms()
         self.pronunciation, self.phonetics, self.definitions = self.webster(self.normalized)
         self.image = self.image_downloader(self.normalized)

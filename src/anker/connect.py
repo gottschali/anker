@@ -29,6 +29,7 @@ def invoke(action, **params):
 
 decks = invoke('deckNames')
 models = invoke('modelNames')
+fields = lambda model: invoke('modelFieldNames', modelName=model)
 
 def buildNote(deckName, modelName, vocab):
     params = {
