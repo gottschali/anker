@@ -11,3 +11,79 @@ Replace =zsh= for =bash=.
 #+begin_src sh
 eval "$(_ANKER_COMPLETE=zsh_source anker)"
 #+end_src
+
+
+
+** Plugins
+*** Cards
+They are a blueprint how to generate flashcards.
+They take inputs from a fetcher and specify how to transform the input possibly via creators
+and how to map them to fields.
+
+Cards have to inherit from =MetaCard= from =anker.meta= and must implement
+a =prepare= method that prepares the input. This method will be called for every input.
+
+Inheritance may be used to have a generic language card that abstracts certain things
+like translating for multiple languages.
+
+#+begin_src python
+class Card(MetaCard):
+    deck_name = "Default"
+    model_name = "English"
+    tags = ["english::idioms"]
+
+    _field_Family = "Idioms"
+
+    def prepare(self, inputs, **kwds):
+        self.idiom, self.meaning, self.example = inputs
+
+    @field
+    def English(self):
+        return self.idiom
+
+    @field
+    def EE(self):
+        return self.meaning
+#+end_src
+- deck_name :: The Anki deck the cards will be put in
+- model_name :: The Anki model the cars will use.
+- tags :: What Anki tags to add to the note.
+- _field_XXX :: Static values for the field named XXX
+- @field :: Decorate a method. The return value will be used for the field with the same name as the method.
+- prepare() :: Prepares the input for use.
+- hook() :: Some creators need to be updated each round.
+
+
+*** Fetcher
+Fetcher generate inputs for the card templates.
+Examples
+- Scrape English idioms from a website
+- Generate all multiplication calculations from with arguments from 1..100
+
+Put your modules in =anker.fetcher=.
+You need to expose a =Fetcher= object that is /iterable/.
+
+**** Functional example
+#+begin_src python
+Fetcher = (x for x in range(100))
+#+end_src
+
+**** Object oriented skeleton
+#+begin_src python
+class Fetcher:
+    def __iter__(self):
+        for page in self.iter_pages():
+            yield from self.consume_soup(page)
+    # Ellipsis
+#+end_src
+Implementing =__getitem__= and =__len__= also works.
+
+*** Creators
+Creators take an input and create some content for it.
+Examples
+- Translate a word with Google translate
+- Find the URL to an image that is symbolic for a word.
+- Find context for a word out of a book
+
+*** Formatters
+Formatters provide utility decorators to beautify the outputs.

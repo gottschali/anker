@@ -24,58 +24,17 @@ def invoke(action, **params):
         if result['error'] is not None:
             raise Exception(result['error'])
         return result['result']
-    except requests.exceptions.ConnectionError:
-        raise AnkiConnectionError("Is the Anki running and the AnkiConnect addon installed and configured to run on ", url)
+    except Exception as e:
+        if isinstance(e, requests.exceptions.ConnectionError):
+            raise AnkiConnectionError("Is the Anki running and the AnkiConnect addon installed and configured to run on ", url)
+        else:
+            # Probably duplicate
+            print(e)
 
 decks = invoke('deckNames')
 models = invoke('modelNames')
-fields = lambda model: invoke('modelFieldNames', modelName=model)
+fieldNames = lambda model: invoke('modelFieldNames', modelName=model)
 
-def buildNote(deckName, modelName, vocab):
-    params = {
-        "note": {
-            "deckName": deckName,
-            "modelName": modelName,
-            "fields": {
-                "English": vocab.word,
-                "German": vocab.translate_word() or "",
-                "POS": vocab.pos or "",
-                "Example": vocab.context or "",
-                "NotEnglish": ", ".join(vocab.synonyms) or "",
-                "Extra": ", ".join(vocab.antonyms),
-                "EE": "<ul>" + "".join("<li>" + v + "</li>" for v in vocab.definitions or ()) + "</ul>",
-                "NotGerman": "",
-                "Reverse": "y",
-                "Family": "ANKER IMPORT",
-                "Phonetics": vocab.phonetics or "",
-                "Image": "",
-                "Mnemonic": "",
-                "Audio": "",
-            },
-            "options": {
-                "allowDuplicate": True,
-                "duplicateScope": "deckName",
-            },
-            "tags": [
-                "english::anker"
-            ],
-        }
-    }
-    if vocab.pronunciation:
-        params["note"]["audio"] = [{
-            "url": vocab.pronunciation,
-            "filename": vocab.word + ".mp3",
-            "fields": [
-                "Audio"
-            ]
-        }]
-    if vocab.image:
-        params["note"]["picture"] = [{
-            "url": vocab.image,
-            "filename": vocab.word + ".png",
-            "fields": [
-                "Image"
-            ]
-        }]
-
+def createNote(params):
     return invoke("addNote", **params)
+

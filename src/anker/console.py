@@ -1,106 +1,76 @@
 import click
-import sys
+from pprint import pprint
 from click.shell_completion import CompletionItem
 from typing import Iterable
-from googletrans import LANGUAGES
+from tabulate import tabulate
+import importlib
+import csv
+import sys
+from pathlib import Path
 
-from .vocabulary import Vocabulary
 import anker.connect as connect
 
-# TODO csv output
-# TODO Configure a function for each field
-# Limitations: bilingual
+def find_plugins(plugin: str):
+    """ Imports all class named Plugin from the folder anker/plugin """
+    result = {}
+    for f in Path("src/anker/" + plugin).iterdir():
+        try:
+            name = f.stem
+            module = importlib.import_module(f"anker.{plugin}.{name}")
+            result[name] = module.__dict__[plugin.capitalize()]
+        except Exception as e:
+            pass
+    return result
 
-class ModelFieldsException(Exception):
-    pass
+models = find_plugins("card")
+fetchers = find_plugins("fetcher")
 
+# Autocompletion does not work when you print something to stdout
 def autocomplete(iterable: Iterable[str]):
     """ Returns a click autocomplete function """
     def _autocomplete(ctx, param, incomplete):
         return [i for i in iterable if i.startswith(incomplete)]
     return _autocomplete
 
-def autocomplete_language(ctx, param, incomplete):
-    return [CompletionItem(language, help=code)
-            for code, language in LANGUAGES.items() if language.startswith(incomplete)]
-
-language_help = "Use a language code as used by google translate or type out the name in english. Tab completion helps you"
-
-
-field_generators = ["word", "word_translation", "pos", "context", "synonyms", "antonyms", "description", "", "y"
-          "ANKER_IMPORT", "phonetics", "", "", ""]
-
 @click.command()
-@click.option("-i", "--input", type=click.File(mode='r'), default=sys.stdin, help="File to read the words from")
-@click.option("-c" "--context", type=click.Path(exists=True), help="Path to search for context. Can be a file or directory")
-@click.option("-d", "--deck", type=click.STRING, autocompletion=autocomplete(connect.decks), default="Anker",
-              help="The deck the cards shall be created in")
-@click.option("-m", "--model", type=click.STRING, autocompletion=autocomplete(connect.models), default="Basic",
-              help="The note model the cards shall use")
-@click.option("-s", "--source", autocompletion=autocomplete_language, default="en",
-              help="The source language of the word. " + language_help)
-@click.option("-t", "--target",  autocompletion=autocomplete_language, default="de",
-              help="Translate to this language. " + language_help)
-@click.option("-g", "--generators",  n=-1, default=field_generators,
-              help="For each field the note type has specify a function that generates the content")
-def main(input, context, deck, model, language, target, generators):
+@click.option("-c", "--card", autocompletion=autocomplete(models.keys()), required=True, help="The card model to script the cards.")
+@click.option("-f", "--fetcher", autocompletion=autocomplete(fetchers.keys()), help="The fetcher that generates inputs for the cards")
+@click.option("-v", "--verbose", is_flag=True, help="Print more")
+@click.option("-i", "--input", is_flag=True, help="Use stdin as the input fetcher")
+@click.option("-o", "--output", type=click.File(mode='w'), default=sys.stdout, help="Write a csv to this file that could be imported manually into anki")
+@click.option("-p", "--push", is_flag=True, help="Push the cards directly to Anki via ankiconnect")
+def main(card, fetcher, verbose, input, output, push):
+
     """ ANKER
-
-    Takes a list of words as inputs and will automatically create anki cards for them to learn vocabulary.
-    The notes will be pushed directly to anki with the anki connect plugin.
-
     Enable autocompletion for bash:
     eval "$(_ANKER_COMPLETE=bash_source anker)"
 
     or for zsh:
     eval "$(_ANKER_COMPLETE=zsh_source anker)"
 
-    - If provided a book can be searched for context of the word.
-
-    - Translation of the word and the context
-
-    - Part of speech
-
-    - Dictionary definitions
-
-    - Phonetic
-
-    - Audio pronunciation
-
-    - Symbolic Image
-
-    - Synonyms and Antonyms
-
+    Create cards models in anker/cards/ as classes that inherit from anker.meta.MetaCard
     """
-    # Translate to short code if necessary
-    language = LANGUAGES[language] if language in LANGUAGES else language
 
-    fields = connect.fields(model)
-    if len(fields) != len(generators):
-        raise ModelFieldsException(f"The generators you specified: {generators} does not match the fields ({fields}) of the Notetype {model}")
+    card_writer = csv.writer(output, delimiter='\t', quotechar='|', quoting=csv.QUOTE_MINIMAL)
+    card = models[card]()
+    if input:
+        fetcher = "stdin"
+    fetcher = fetchers[fetcher]
+    input = fetcher() if hasattr(fetcher, "__call__") else fetcher
 
-    for field, generator in zip(fields, generators):
-        print(field, generator)
-
-    for word in input:
-        v = Vocabulary(word, context, language, target)
-
-        print(v)
-        print("POS: ", v.pos)
-        print("STEM: ", v.stem)
-        print("CONTEXT: ", v.context)
-        print("TRANS_CONTEXT:", v.translate_context())
-        print("TRANS_WORD:", v.translate_word())
-        print("SYNONYMS", v.synonyms)
-        print("ANTONYMS", v.antonyms)
-        print("IMAGE", v.image)
-        print("PHONETICS", v.phonetics)
-        print("PRONUNCIATION", v.pronunciation)
-        print("DEFINITIONS", v.definitions)
-        print("=== Building Note === ")
-
-        print(connect.buildNote(deck, model, v))
-        print("=== Built Note === ")
+    options = {
+        "allowDuplicate": False,
+                "duplicateScope": "deckName",
+        }
+    for i in input:
+        fields, params = card(i, options=options)
+        if output:
+            card_writer.writerow(v for _, v in fields)
+        if verbose:
+            click.echo(tabulate(fields, tablefmt="fancy_grid"))
+        if push:
+            print("Creating Note")
+            print(connect.createNote(params))
 
 
 if __name__ == "__main__":

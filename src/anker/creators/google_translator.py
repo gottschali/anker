@@ -4,12 +4,6 @@ from googletrans import Translator
 
 translator = Translator()
 
-# Needs context
-def translate_context(vocab):
-    if hasattr(vocab, "context"):
-        translation = translator.translate(vocab.context, src=vocab.language, dest=vocab.target)
-        return translation.text
-
-def translate_word(vocab):
-    translation = translator.translate(vocab.normalized, src=vocab.language, dest=vocab.target)
+def translate(text, src, dest):
+    translation = translator.translate(text, src=src, dest=dest)
     return translation.text
