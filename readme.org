@@ -1,5 +1,8 @@
-#+TITLE: Readme
 * Anker
+Toolkit to script flashcard generation for the spaced repetition learning app Anki.
+Model your Notes as Python classes. You can add methods to fetch data and format the fields.
+An example usage would be to scrape a dictionary for english words, their translation and maybe also a recording of the pronunciation.
+We could go further and do an image search and add this as context to the card.
 
 ** Prerequisites
 - [[https://apps.ankiweb.net/][Anki]] running
