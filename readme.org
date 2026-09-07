@@ -90,3 +90,30 @@ Examples
 
 *** Formatters
 Formatters provide utility decorators to beautify the outputs.
+
+** Migrating an existing Anki deck (Italian example)
+The =ankiconnect= fetcher reads notes that already live in Anki, so a card class
+can /rewrite/ a deck into a richer note type instead of building one from scratch.
+
+Plugins added for this:
+- =fetcher/ankiconnect.py= :: yields ={noteId, modelName, tags, fields}= for an
+  Anki search (env =ANKER_SRC_QUERY=, =ANKER_SRC_LIMIT=).
+- =creators/wiktionary.py= :: =Wiktionary(lang)= scrapes one language section of an
+  en.wiktionary.org entry -> part of speech, IPA, gender, English definitions and a
+  native pronunciation clip.
+- =creators/mymemory.py= :: =MyMemory(email)= -- keyless translation, a maintained
+  replacement for the dead =googletrans= creator.
+- =creators/google_tts.py= :: =google_tts(text, lang)= -> a Google Translate TTS
+  URL, used as the audio fallback when Wiktionary has no recording.
+- =card/italian_vocab.py= :: maps a Duolingo =Basic (and reversed card)= note
+  (Italian front / English back) onto the =Language= note type, enriched with all
+  of the above.
+
+For a resumable, rate-limited bulk run use the script rather than the CLI:
+#+begin_src sh
+python scripts/migrate_italiano.py --dry-run --limit 25   # preview -> out/*.jsonl
+python scripts/migrate_italiano.py --limit 100            # migrate a batch
+python scripts/migrate_italiano.py                        # finish the rest
+#+end_src
+It tags each source note =migrated-to-language= and suspends its cards (never
+deletes); state + a full JSONL action log live under =out/=.
